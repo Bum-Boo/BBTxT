@@ -15,13 +15,16 @@ The app keeps a fixed brand name, `BB TxT`, while language switching only change
 - Top-bar language switching using resource bundles for localized labels, buttons, tabs, dialogs, and status text
 - Fixed product branding: `BB TxT`
 - Hidden file and extension filtering controls
+- Bundled Source Han Sans fonts with license text included
 
 ## Project Layout
 
 ```text
+archive/legacy
+  Archived root-level legacy source
+
 assets/icons
   BTXTB.ico
-  BTXTB.png
 
 dist
   jpackage outputs are written here during packaging
@@ -41,6 +44,13 @@ src/main/java/app
   /search
   /ui
   /util
+
+src/main/resources/assets/icons
+  BTXTB.ico
+  BTXTB.png
+
+src/main/resources/fonts
+  Source Han Sans fonts and bundled license
 
 src/main/resources/i18n
   messages*.properties

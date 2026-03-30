@@ -41,14 +41,18 @@ import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Image;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
+import javax.imageio.ImageIO;
 
 public final class MainFrame extends JFrame {
 
@@ -99,6 +103,7 @@ public final class MainFrame extends JFrame {
         super(AppBrand.NAME);
         transientNoticeTimer.setRepeats(false);
         AppTheme.applyLanguage(currentLanguage);
+        setIconImage(loadWindowIcon());
 
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(1180, 760));
@@ -110,6 +115,19 @@ public final class MainFrame extends JFrame {
         applyLocalizedText();
         updateExtensionsSummary();
         getRootPane().setDefaultButton(searchButton);
+    }
+
+    private Image loadWindowIcon() {
+        try (InputStream input = MainFrame.class.getResourceAsStream("/assets/icons/BTXTB.png")) {
+            if (input != null) {
+                Image icon = ImageIO.read(input);
+                if (icon != null) {
+                    return icon;
+                }
+            }
+        } catch (IOException ignored) {
+        }
+        return null;
     }
 
     private JPanel buildContent() {
