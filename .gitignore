@@ -1,6 +1,9 @@
 # Gradle / Build
 .gradle/
 .gradle-user/
+bin/
+dist/
+release/
 build/
 out/
 
