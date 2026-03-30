@@ -4,3 +4,17 @@
 *.class
 *.log
 !.gitkeep
+
+# Gradle
+.gradle/
+build/
+out/
+
+# IntelliJ / VS Code / misc
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
