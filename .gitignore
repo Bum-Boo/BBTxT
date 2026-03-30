@@ -1,20 +1,20 @@
-/.gradle/
-/build/
-/out/
-*.class
-*.log
-!.gitkeep
-
-# Gradle
+# Gradle / Build
 .gradle/
+.gradle-user/
 build/
 out/
 
-# IntelliJ / VS Code / misc
+# Compiled files
+*.class
+
+# Logs
+*.log
+
+# IDE / Editor
 .idea/
 .vscode/
 *.iml
 
-# OS
+# OS files
 .DS_Store
 Thumbs.db
