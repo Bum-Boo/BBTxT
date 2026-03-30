@@ -1,0 +1,161 @@
+import org.gradle.api.tasks.Copy
+import org.gradle.api.tasks.bundling.Jar
+import org.gradle.api.tasks.bundling.Zip
+
+plugins {
+    id 'application'
+}
+
+group = 'io.github.hojun'
+version = '0.1.0'
+
+def appBrand = 'BB TxT'
+def appSlug = 'BB-TxT'
+def iconFile = file('assets/icons/BTXTB.ico')
+def isWindows = System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+base {
+    archivesName = 'bb-txt'
+}
+
+application {
+    mainClass = 'app.AppLauncher'
+    applicationName = appBrand
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.named('jar', Jar) {
+    manifest {
+        attributes('Main-Class': application.mainClass.get())
+    }
+}
+
+tasks.register('verifyPackagingAssets') {
+    group = 'distribution'
+    description = 'Verifies that packaging assets such as the Windows icon are present.'
+    doLast {
+        if (!iconFile.isFile()) {
+            throw new GradleException("Missing packaging icon: ${iconFile}. Expected assets/icons/BTXTB.ico.")
+        }
+    }
+}
+
+def jpackageBinary = {
+    def binaryName = isWindows ? 'jpackage.exe' : 'jpackage'
+    def candidate = new File(new File(System.getProperty('java.home')), "bin/${binaryName}")
+    if (!candidate.isFile()) {
+        throw new GradleException("jpackage not found at ${candidate}. Use a full JDK on the PATH or JAVA_HOME.")
+    }
+    return candidate.absolutePath
+}
+
+def jpackageCommonArgs = { String type, File destination ->
+    [
+            '--type', type,
+            '--dest', destination.absolutePath,
+            '--name', appBrand,
+            '--app-version', project.version.toString(),
+            '--input', tasks.named('jar', Jar).get().archiveFile.get().asFile.parentFile.absolutePath,
+            '--main-jar', tasks.named('jar', Jar).get().archiveFile.get().asFile.name,
+            '--main-class', application.mainClass.get(),
+            '--icon', iconFile.absolutePath,
+            '--vendor', group.toString(),
+            '--description', 'Windows desktop text search utility'
+    ]
+}
+
+tasks.register('packageAppImage') {
+    group = 'distribution'
+    description = 'Builds a Windows app-image using jpackage.'
+    dependsOn tasks.named('jar'), tasks.named('verifyPackagingAssets')
+    def destinationDir = file('dist/app-image')
+    doFirst {
+        if (!isWindows) {
+            throw new GradleException('Windows app-image packaging is only configured for Windows hosts.')
+        }
+        destinationDir.mkdirs()
+    }
+    doLast {
+        project.exec {
+            workingDir projectDir
+            executable jpackageBinary()
+            args jpackageCommonArgs('app-image', destinationDir)
+        }
+    }
+}
+
+tasks.register('packageExe') {
+    group = 'distribution'
+    description = 'Builds a Windows installer-style exe using jpackage.'
+    dependsOn tasks.named('jar'), tasks.named('verifyPackagingAssets')
+    def destinationDir = file('dist/exe')
+    doFirst {
+        if (!isWindows) {
+            throw new GradleException('Windows exe packaging is only configured for Windows hosts.')
+        }
+        destinationDir.mkdirs()
+    }
+    doLast {
+        project.exec {
+            workingDir projectDir
+            executable jpackageBinary()
+            args jpackageCommonArgs('exe', destinationDir) + ['--win-menu', '--win-shortcut']
+        }
+    }
+}
+
+tasks.register('releaseAppImageZip', Zip) {
+    group = 'distribution'
+    description = 'Creates the release ZIP for the Windows app-image.'
+    dependsOn tasks.named('packageAppImage')
+    destinationDirectory = file('release')
+    archiveFileName = "${appSlug}-app-image-${project.version}.zip"
+    from(file("dist/app-image/${appBrand}"))
+}
+
+tasks.register('releaseExe', Copy) {
+    group = 'distribution'
+    description = 'Copies the packaged Windows installer to the release folder with the recommended release name.'
+    dependsOn tasks.named('packageExe')
+    from(fileTree('dist/exe') {
+        include '*.exe'
+    })
+    into(file('release'))
+    rename { "${appSlug}-Setup-${project.version}.exe" }
+}
+
+tasks.register('assembleRelease') {
+    group = 'distribution'
+    description = 'Builds the jar plus both Windows release assets.'
+    dependsOn tasks.named('jar')
+    dependsOn tasks.named('releaseAppImageZip')
+    dependsOn tasks.named('releaseExe')
+}
+
+tasks.register('runVerification', JavaExec) {
+    group = 'verification'
+    description = 'Runs the lightweight verification harness for the search engine.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'app.search.SearchEngineVerification'
+}
+
+tasks.register('runSmokeCheck', JavaExec) {
+    group = 'verification'
+    description = 'Instantiates the Swing frame to catch startup regressions.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'app.ui.MainFrameSmokeCheck'
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('runVerification')
+    dependsOn tasks.named('runSmokeCheck')
+}
