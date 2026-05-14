@@ -1,28 +1,20 @@
 # BB TxT Portfolio Case Study
 
-BB TxT is a Java Swing desktop app for fast local text search across source code, logs, configs, and readable text files. It is designed for developers and power users who need trustworthy search results without sending local content to external services.
-
-## Positioning
-
-BB TxT fits the portfolio theme of local-first productivity tools and desktop utilities. It is a focused search tool rather than a general document manager: pick a local folder, enter a search term, tune a few options, and inspect the matches and skipped files.
-
-The strongest public framing is:
-
-- fast local text search
-- explicit skipped-file reporting
-- predictable search options
-- Windows-friendly desktop packaging
-- multilingual UI rendering
-
 ## Problem
 
-Developers often need to search project folders, logs, generated text, config files, and exported notes quickly. General-purpose IDE search is useful inside one project, but it can be heavy or awkward when the search target is a loose folder, mixed file set, or local archive.
+Developers often need to search project folders, logs, generated text, config files, and exported notes quickly. IDE search is useful inside one project, but it can be heavy or awkward when the target is a loose folder, mixed file set, or local archive.
 
-BB TxT addresses that practical workflow by making local folder search a small standalone utility.
+## Target Users
 
-## Product Shape
+- Developers and power users.
+- People inspecting logs, configs, source folders, and readable local text files.
+- Users who want quick local search without uploading files to external services.
 
-The app centers on a single direct workflow:
+## Design Goal
+
+Make local folder search a small standalone desktop utility with predictable options, explicit skipped-file reporting, and a release path for Windows users.
+
+## Core Workflow
 
 1. Choose a root folder.
 2. Enter a search phrase or regex.
@@ -31,40 +23,38 @@ The app centers on a single direct workflow:
 5. Review matched file paths, line numbers, and text previews.
 6. Check skipped or unreadable files when needed.
 
-The interface is intentionally compact because the primary user task is scanning, comparing, and deciding where to open or inspect next.
+## Architecture Summary
 
-## Implementation Notes
+BB TxT is built with Java Swing and Gradle. The codebase includes a search engine, path/file filtering, text probing, normalization helpers, result models, Swing UI components, localization resources, bundled Source Han Sans fonts, and Windows packaging tasks.
 
-BB TxT is built with Java Swing and Gradle. The codebase includes a search engine, path/file filtering, text probing, normalization helpers, result models, Swing UI components, localization resources, bundled Source Han Sans fonts, and packaging tasks for Windows app-image releases.
+## Safety / Privacy Decisions
 
-Validation commands documented in the README include:
+- Search happens on local files.
+- No cloud indexing or external search service is part of the core workflow.
+- Public demos should use synthetic fixtures rather than private source code, client logs, or personal documents.
+- Release artifacts belong in GitHub Releases, not the source tree.
 
-```powershell
-.\gradlew.bat check
-.\gradlew.bat runVerification
-.\gradlew.bat runSmokeCheck
-```
+## Technical Highlights
 
-## Portfolio Value
+- Literal search by default.
+- Case-sensitive, whole-word, and regex modes.
+- Explicit skipped/error reporting.
+- Hidden-file and extension filtering.
+- Multilingual UI rendering with bundled font support.
+- Windows app-image release artifact.
 
-BB TxT demonstrates:
+## Current Limitations
 
-- local-first developer tooling
-- Java desktop application structure
-- text search behavior and file filtering
-- explicit error/skipped-file reporting
-- multilingual UI support
-- Windows packaging and release workflow
-
-## Safety and Privacy Notes
-
-The repo should keep the local-first boundary visible. BB TxT searches files on the user's machine and does not need cloud sync, accounts, or external indexing services for the core workflow.
-
-Public examples should use synthetic fixtures rather than private source code, client logs, or personal documents.
+- Focused on phase-1 developer text search.
+- PDF and Office documents are not part of the core default flow.
+- Windows packaging is the primary release path.
 
 ## Next Steps
 
-- Link this case study from the README after the existing README changes are finalized.
-- Keep release artifacts in GitHub Releases rather than committing generated ZIPs.
 - Add a short GIF showing folder selection, search execution, and results.
-- Keep the README clear about what file types are searched by default.
+- Keep release artifacts in GitHub Releases.
+- Keep README copy clear about supported file types.
+
+## Portfolio Value
+
+BB TxT demonstrates local-first developer tooling, Java desktop structure, text search behavior, explicit error reporting, multilingual UI support, and Windows packaging discipline.
