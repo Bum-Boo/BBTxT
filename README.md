@@ -112,3 +112,18 @@ sample-data                    Manual search fixtures
 - The app bundles Source Han Sans fonts to keep English, Korean, Japanese, and Chinese UI rendering stable.
 - The Gradle packaging tasks are Windows-oriented.
 - Release artifacts are meant to be uploaded to GitHub Releases, not committed into the source tree.
+## Demo Walkthrough
+
+실제 데모는 폴더 경로와 검색어를 입력해 텍스트 파일 안의 매칭 줄을 찾는 흐름입니다.
+
+1. 앱을 실행합니다.
+2. 검색할 루트 폴더를 입력합니다.
+3. 검색어에 `apple` 같은 단어를 입력합니다.
+4. `검색` 버튼을 누릅니다.
+5. 결과 표에서 파일명, 줄 번호, 매칭 문장을 확인합니다.
+
+![Java explore start](docs/demo-screenshots/java-explore-flow-01-open.png)
+
+![Folder and keyword entered](docs/demo-screenshots/java-explore-flow-02-input-filled.png)
+
+![Search result table](docs/demo-screenshots/java-explore-flow-03-search-results.png)
