@@ -62,6 +62,7 @@ Run checks:
 - [Chinese README](docs/readme/README.zh-CN.md)
 - [Japanese README](docs/readme/README.ja.md)
 - [Portfolio case study](docs/portfolio-case-study.md)
+- [GitHub metadata note](docs/github-metadata.md)
 
 ## Status
 
