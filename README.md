@@ -122,8 +122,14 @@ sample-data                    Manual search fixtures
 4. `검색` 버튼을 누릅니다.
 5. 결과 표에서 파일명, 줄 번호, 매칭 문장을 확인합니다.
 
+앱을 처음 열면 루트 폴더, 검색어, 검색 옵션을 입력하는 화면이 보입니다.
+
 ![Java explore start](docs/demo-screenshots/java-explore-flow-01-open.png)
 
+검색할 폴더와 `apple` 같은 키워드를 입력한 뒤 오른쪽 위의 `Search` 버튼을 누릅니다.
+
 ![Folder and keyword entered](docs/demo-screenshots/java-explore-flow-02-input-filled.png)
+
+검색이 끝나면 결과 표에 파일 경로, 줄 번호, 매칭 문장이 표시됩니다.
 
 ![Search result table](docs/demo-screenshots/java-explore-flow-03-search-results.png)
