@@ -2,7 +2,7 @@
 
 > Fast local text search for source code, logs, configs, and readable text files.
 
-[English](README.md) | [한국어](docs/readme/README.ko.md) | [中文](docs/readme/README.zh-CN.md) | [日本語](docs/readme/README.ja.md)
+[Overview](README.md) | [English](docs/readme/README.en.md) | [한국어](docs/readme/README.ko.md) | [中文](docs/readme/README.zh-CN.md) | [日本語](docs/readme/README.ja.md)
 
 | Area | Detail |
 |---|---|
@@ -50,11 +50,11 @@ After the search finishes, the results table shows the matched file path, line n
 
 ## Documentation
 
-- [Full English README](docs/readme/README.en.md)
+- [English README](docs/readme/README.en.md)
 - [한국어 README](docs/readme/README.ko.md)
 - [中文 README](docs/readme/README.zh-CN.md)
 - [日本語 README](docs/readme/README.ja.md)
 
 ## Notes
 
-The root README is intentionally short. Detailed setup, architecture, limitations, and localized walkthroughs live in the linked README files.
+This overview is intentionally short. Detailed setup, architecture, limitations, and localized walkthroughs live in the linked README files.
