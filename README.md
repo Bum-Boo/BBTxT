@@ -114,22 +114,22 @@ sample-data                    Manual search fixtures
 - Release artifacts are meant to be uploaded to GitHub Releases, not committed into the source tree.
 ## Demo Walkthrough
 
-실제 데모는 폴더 경로와 검색어를 입력해 텍스트 파일 안의 매칭 줄을 찾는 흐름입니다.
+The demo flow enters a folder path and a search term, then finds matching lines inside readable text files.
 
-1. 앱을 실행합니다.
-2. 검색할 루트 폴더를 입력합니다.
-3. 검색어에 `apple` 같은 단어를 입력합니다.
-4. `검색` 버튼을 누릅니다.
-5. 결과 표에서 파일명, 줄 번호, 매칭 문장을 확인합니다.
+1. Launch the app.
+2. Enter the root folder to search.
+3. Enter a term such as `apple`.
+4. Click `Search`.
+5. Review the file name, line number, and matched text in the results table.
 
-앱을 처음 열면 루트 폴더, 검색어, 검색 옵션을 입력하는 화면이 보입니다.
+The first screen shows fields for the root folder, search term, and search options.
 
 ![Java explore start](docs/demo-screenshots/java-explore-flow-01-open.png)
 
-검색할 폴더와 `apple` 같은 키워드를 입력한 뒤 오른쪽 위의 `Search` 버튼을 누릅니다.
+Enter the folder path and a keyword such as `apple`, then click the `Search` button in the top-right area.
 
 ![Folder and keyword entered](docs/demo-screenshots/java-explore-flow-02-input-filled.png)
 
-검색이 끝나면 결과 표에 파일 경로, 줄 번호, 매칭 문장이 표시됩니다.
+After the search finishes, the results table shows the matched file path, line number, and text preview.
 
 ![Search result table](docs/demo-screenshots/java-explore-flow-03-search-results.png)
