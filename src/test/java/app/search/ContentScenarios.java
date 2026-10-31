@@ -95,6 +95,21 @@ final class ContentScenarios {
             }
         });
 
+        runner.run("line endings: LF, CRLF and lone CR give the same line numbers in both modes", () -> {
+            try (Corpus corpus = new Corpus("eol")) {
+                corpus.write("mixed.txt", "one\r\ntwo\rthree\nfour apple\r\nfive", StandardCharsets.UTF_8);
+                corpus.write("classic-mac.txt", "one\rtwo\rthe apple\r", StandardCharsets.UTF_8);
+                corpus.write("no-newline.txt", "first\nlast apple", StandardCharsets.UTF_8);
+
+                for (SearchMode mode : SearchMode.values()) {
+                    Corpus.Result result = Corpus.search(corpus.options("apple", mode, false, false, false));
+                    assertLineColumn(single(result, "mixed.txt"), 4, 6, mode + " mixed");
+                    assertLineColumn(single(result, "classic-mac.txt"), 3, 5, mode + " CR-only");
+                    assertLineColumn(single(result, "no-newline.txt"), 2, 6, mode + " no trailing newline");
+                }
+            }
+        });
+
         runner.run("case folding: length-changing lowercase (Turkish dotted I) does not crash or shift columns", () -> {
             try (Corpus corpus = new Corpus("fold")) {
                 corpus.write("long.txt", "İ".repeat(100) + " 한글 tail\n", StandardCharsets.UTF_8);

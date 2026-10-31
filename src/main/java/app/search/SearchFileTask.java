@@ -164,8 +164,12 @@ final class SearchFileTask implements Callable<FileSearchResult> {
         int size = 1;
         starts[0] = 0;
 
+        // Same line terminators as BufferedReader.readLine in literal mode: LF, CRLF and a lone CR.
         for (int index = 0; index < content.length(); index++) {
-            if (content.charAt(index) == '\n') {
+            char value = content.charAt(index);
+            boolean lineBreak = value == '\n'
+                    || (value == '\r' && (index + 1 == content.length() || content.charAt(index + 1) != '\n'));
+            if (lineBreak) {
                 if (size == starts.length) {
                     int[] expanded = new int[starts.length * 2];
                     System.arraycopy(starts, 0, expanded, 0, starts.length);
