@@ -27,6 +27,63 @@ final class TraversalScenarios {
     }
 
     static void register(ScenarioRunner runner) {
+        runner.run("symlinks: a symlinked root folder is searched and paths stay under the chosen root", () -> {
+            try (Corpus corpus = new Corpus("link-root")) {
+                corpus.write("real/a.txt", "apple\n", StandardCharsets.UTF_8);
+                corpus.write("real/sub/b.txt", "apple\n", StandardCharsets.UTF_8);
+                corpus.write("real/.hidden/c.txt", "apple\n", StandardCharsets.UTF_8);
+                Path link = corpus.symlink("link", corpus.root().resolve("real"));
+
+                Corpus.Result result = Corpus.search(Corpus.options(link, "apple", SearchMode.LITERAL,
+                        false, false, false, SearchDefaults.defaultExtensions()));
+
+                assertEquals(2, result.matches().size(), "Both visible files under the symlinked root match.");
+                for (SearchMatch match : result.matches()) {
+                    assertTrue(match.path().startsWith(link), "Reported path keeps the chosen root: " + match.path());
+                }
+                SkippedPath hidden = result.skipFor(".hidden");
+                assertTrue(hidden != null && hidden.path().startsWith(link), "Hidden directory reported under the root.");
+            }
+        });
+
+        runner.run("symlinks: links inside the tree are reported, never followed, and loops terminate", () -> {
+            try (Corpus corpus = new Corpus("link-inner")) {
+                Path outside = corpus.write("outside/secret.txt", "apple outside\n", StandardCharsets.UTF_8);
+                corpus.write("tree/real.txt", "apple\n", StandardCharsets.UTF_8);
+                corpus.symlink("tree/file-link.txt", outside);
+                corpus.symlink("tree/dir-link", outside.getParent());
+                corpus.symlink("tree/loop", corpus.root().resolve("tree"));
+                corpus.symlink("tree/broken.txt", corpus.root().resolve("tree/missing.txt"));
+                corpus.symlink("tree/skipped.tmp", outside);
+
+                Corpus.Result result = Corpus.search(Corpus.options(corpus.root().resolve("tree"), "apple",
+                        SearchMode.LITERAL, false, false, false, SearchDefaults.defaultExtensions()));
+
+                assertEquals(1, result.matches().size(), "Only the real file is searched.");
+                assertEquals("SYMBOLIC_LINK", reasonName(result, "file-link.txt"), "File symlink is reported.");
+                assertEquals("SYMBOLIC_LINK", reasonName(result, "dir-link"), "Directory symlink is reported.");
+                assertEquals(SkippedPathKind.DIRECTORY, result.skipFor("dir-link").kind(), "Directory link kind.");
+                assertEquals("SYMBOLIC_LINK", reasonName(result, "loop"), "Loop link is reported.");
+                assertEquals("SYMBOLIC_LINK", reasonName(result, "broken.txt"), "Broken link is reported.");
+                assertEquals("FILTERED_EXTENSION", reasonName(result, "skipped.tmp"), "Extension filter applies first.");
+            }
+        });
+
+        runner.run("special files: a FIFO is reported and never blocks the search", () -> {
+            try (Corpus corpus = new Corpus("fifo")) {
+                corpus.write("a.txt", "apple\n", StandardCharsets.UTF_8);
+                Path fifo = corpus.root().resolve("pipe.txt");
+                if (!makeFifo(fifo)) {
+                    ScenarioRunner.skip("mkfifo is not available here.");
+                }
+
+                Corpus.Result result = corpus.search("apple");
+
+                assertEquals(1, result.matches().size(), "Regular file matches.");
+                assertEquals("NOT_REGULAR_FILE", reasonName(result, "pipe.txt"), "FIFO is reported.");
+            }
+        });
+
         runner.run("permissions: unreadable files and folders are reported and the search continues", () -> {
             try (Corpus corpus = new Corpus("perm")) {
                 corpus.write("ok.txt", "apple\n", StandardCharsets.UTF_8);

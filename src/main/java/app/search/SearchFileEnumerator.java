@@ -31,14 +31,21 @@ final class SearchFileEnumerator {
         Objects.requireNonNull(cancellationRequested, "cancellationRequested");
         Objects.requireNonNull(listener, "listener");
 
-        Files.walkFileTree(options.rootDirectory(), new SimpleFileVisitor<>() {
+        // Without FOLLOW_LINKS, Files.walkFileTree treats a symlinked start path as a plain file, so a root
+        // folder that is itself a link yielded nothing. Walk the link target but keep reporting paths under the
+        // root the user chose. Links inside the tree are still reported and never followed.
+        Path root = options.rootDirectory();
+        Path walkRoot = Files.isSymbolicLink(root) && Files.isDirectory(root) ? root.toRealPath() : root;
+
+        Files.walkFileTree(walkRoot, new SimpleFileVisitor<>() {
             @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+            public FileVisitResult preVisitDirectory(Path walkedDir, BasicFileAttributes attrs) throws IOException {
                 if (cancellationRequested.getAsBoolean()) {
                     return FileVisitResult.TERMINATE;
                 }
 
-                if (!dir.equals(options.rootDirectory())
+                Path dir = displayPath(walkedDir);
+                if (!walkedDir.equals(walkRoot)
                         && !options.includeHidden()
                         && PathFilters.isHiddenLike(dir)) {
                     listener.onSkip(new SkippedPath(
@@ -54,12 +61,14 @@ final class SearchFileEnumerator {
             }
 
             @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            public FileVisitResult visitFile(Path walkedFile, BasicFileAttributes attrs) throws IOException {
                 if (cancellationRequested.getAsBoolean()) {
                     return FileVisitResult.TERMINATE;
                 }
 
+                Path file = displayPath(walkedFile);
                 if (!attrs.isRegularFile()) {
+                    reportNonRegularEntry(file, attrs);
                     return FileVisitResult.CONTINUE;
                 }
 
@@ -101,7 +110,8 @@ final class SearchFileEnumerator {
             }
 
             @Override
-            public FileVisitResult visitFileFailed(Path file, IOException exception) throws IOException {
+            public FileVisitResult visitFileFailed(Path walkedFile, IOException exception) throws IOException {
+                Path file = displayPath(walkedFile);
                 listener.onSkip(new SkippedPath(
                         file,
                         Files.isDirectory(file) ? SkippedPathKind.DIRECTORY : SkippedPathKind.FILE,
@@ -109,6 +119,38 @@ final class SearchFileEnumerator {
                         exception.getMessage() == null ? "" : exception.getMessage()
                 ));
                 return cancellationRequested.getAsBoolean() ? FileVisitResult.TERMINATE : FileVisitResult.CONTINUE;
+            }
+
+            private Path displayPath(Path walked) {
+                return walkRoot == root ? walked : root.resolve(walkRoot.relativize(walked));
+            }
+
+            private void reportNonRegularEntry(Path entry, BasicFileAttributes attrs) throws IOException {
+                // Symbolic links, pipes, sockets and devices are never opened, but they are reported so that
+                // nothing in scope disappears silently. A FIFO would block a reader indefinitely.
+                boolean directoryTarget = Files.isDirectory(entry);
+                SkippedPathKind kind = directoryTarget ? SkippedPathKind.DIRECTORY : SkippedPathKind.FILE;
+
+                if (!options.includeHidden() && PathFilters.isHiddenLike(entry)) {
+                    listener.onSkip(new SkippedPath(entry, kind, SkipReason.HIDDEN_EXCLUDED,
+                            "Hidden entry excluded by the current search options."));
+                    return;
+                }
+
+                String extension = PathFilters.extensionOf(entry);
+                if (!directoryTarget && (extension.isEmpty() || !options.allowedExtensions().contains(extension))) {
+                    listener.onSkip(new SkippedPath(entry, kind, SkipReason.FILTERED_EXTENSION,
+                            "Extension is outside the configured search scope."));
+                    return;
+                }
+
+                if (attrs.isSymbolicLink()) {
+                    listener.onSkip(new SkippedPath(entry, kind, SkipReason.SYMBOLIC_LINK,
+                            "Symbolic links inside the search folder are not followed."));
+                } else {
+                    listener.onSkip(new SkippedPath(entry, kind, SkipReason.NOT_REGULAR_FILE,
+                            "Not a regular file (pipe, socket, device or similar)."));
+                }
             }
         });
     }

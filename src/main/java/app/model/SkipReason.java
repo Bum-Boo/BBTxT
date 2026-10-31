@@ -8,7 +8,9 @@ public enum SkipReason {
     PERMISSION_DENIED("skip.permissionDenied"),
     UNREADABLE_FILE("skip.unreadableFile"),
     UNEXPECTED_IO_ERROR("skip.unexpectedIo"),
-    FILE_TOO_LARGE("skip.fileTooLarge");
+    FILE_TOO_LARGE("skip.fileTooLarge"),
+    SYMBOLIC_LINK("skip.symbolicLink"),
+    NOT_REGULAR_FILE("skip.notRegularFile");
 
     private final String messageKey;
 
