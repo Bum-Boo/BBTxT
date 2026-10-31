@@ -9,7 +9,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Locale;
 import java.util.function.BooleanSupplier;
 
 final class LiteralSearchPlan {
@@ -28,7 +27,7 @@ final class LiteralSearchPlan {
         this.normalizedQuery = TextNormalization.normalizeLiteral(options.query());
         this.queryLength = normalizedQuery.length();
         this.asciiCaseInsensitive = !caseSensitive && TextNormalization.isAscii(normalizedQuery);
-        this.foldedQuery = caseSensitive ? normalizedQuery : normalizedQuery.toLowerCase(Locale.ROOT);
+        this.foldedQuery = caseSensitive ? normalizedQuery : foldCase(normalizedQuery);
         this.asciiQuery = asciiCaseInsensitive ? foldedQuery.toCharArray() : new char[0];
     }
 
@@ -66,7 +65,7 @@ final class LiteralSearchPlan {
             return;
         }
 
-        String foldedLine = caseSensitive || asciiCaseInsensitive ? null : line.toLowerCase(Locale.ROOT);
+        String foldedLine = caseSensitive || asciiCaseInsensitive ? null : foldCase(line);
         int fromIndex = 0;
 
         while (fromIndex <= line.length() - queryLength) {
@@ -92,6 +91,19 @@ final class LiteralSearchPlan {
 
             fromIndex = index + Math.max(queryLength, 1);
         }
+    }
+
+    /**
+     * Folds case one UTF-16 unit at a time so the folded text keeps the original length. Match offsets found in
+     * the folded line can then be used directly on the original line. {@link String#toLowerCase} cannot be used
+     * here because it changes the length for characters such as U+0130 (Turkish dotted capital I).
+     */
+    private static String foldCase(String value) {
+        char[] chars = value.toCharArray();
+        for (int index = 0; index < chars.length; index++) {
+            chars[index] = Character.toLowerCase(Character.toUpperCase(chars[index]));
+        }
+        return new String(chars);
     }
 
     private int indexOfIgnoreCaseAscii(String line, int fromIndex) {

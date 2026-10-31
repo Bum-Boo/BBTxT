@@ -95,6 +95,20 @@ final class ContentScenarios {
             }
         });
 
+        runner.run("case folding: length-changing lowercase (Turkish dotted I) does not crash or shift columns", () -> {
+            try (Corpus corpus = new Corpus("fold")) {
+                corpus.write("long.txt", "İ".repeat(100) + " 한글 tail\n", StandardCharsets.UTF_8);
+                corpus.write("short.txt", "İİ 한글 tail\n", StandardCharsets.UTF_8);
+                corpus.write("other.txt", "한글\n", StandardCharsets.UTF_8);
+
+                Corpus.Result result = corpus.search("한글");
+
+                assertEquals(102, single(result, "long.txt").columnNumber(), "Column after 100 dotted capital I.");
+                assertEquals(4, single(result, "short.txt").columnNumber(), "Column after two dotted capital I.");
+                assertEquals(1, result.matchesIn("other.txt").size(), "Unrelated files still searched.");
+            }
+        });
+
         runner.run("case folding: non-ASCII case-insensitive and case-sensitive behaviour", () -> {
             try (Corpus corpus = new Corpus("fold-unicode")) {
                 corpus.write("greek.txt", "ΣΊΣΥΦΟΣ\n", StandardCharsets.UTF_8);
