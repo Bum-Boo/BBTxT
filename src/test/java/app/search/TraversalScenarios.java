@@ -150,7 +150,10 @@ final class TraversalScenarios {
             try (Corpus corpus = new Corpus("ext")) {
                 corpus.write("UPPER.TXT", "apple\n", StandardCharsets.UTF_8);
                 corpus.write("Makefile", "apple\n", StandardCharsets.UTF_8);
-                corpus.write("trailing.", "apple\n", StandardCharsets.UTF_8);
+                // Windows silently drops a trailing dot from file names.
+                boolean windows = System.getProperty("os.name").toLowerCase(java.util.Locale.ROOT).contains("windows");
+                String trailingDot = windows ? "Makefile2" : "trailing.";
+                corpus.write(trailingDot, "apple\n", StandardCharsets.UTF_8);
                 corpus.write("archive.tar.gz", "apple\n", StandardCharsets.UTF_8);
                 corpus.write("config.yaml.bak", "apple\n", StandardCharsets.UTF_8);
                 corpus.write("notes.tmp", "apple\n", StandardCharsets.UTF_8);
@@ -160,7 +163,7 @@ final class TraversalScenarios {
                         false, false, false, ExtensionFilterParser.parse(".TMP; bak")));
 
                 assertEquals(1, defaults.matchesIn("UPPER.TXT").size(), "Upper-case extension matches.");
-                for (String name : new String[]{"Makefile", "trailing.", "archive.tar.gz", "config.yaml.bak", "notes.tmp"}) {
+                for (String name : new String[]{"Makefile", trailingDot, "archive.tar.gz", "config.yaml.bak", "notes.tmp"}) {
                     assertEquals("FILTERED_EXTENSION", reasonName(defaults, name), name);
                 }
                 assertEquals(2, custom.matches().size(), "Custom extension set picks .tmp and .bak.");
