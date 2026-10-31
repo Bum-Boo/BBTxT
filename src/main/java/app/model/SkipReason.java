@@ -7,7 +7,8 @@ public enum SkipReason {
     DECODE_FAILURE("skip.decodeFailure"),
     PERMISSION_DENIED("skip.permissionDenied"),
     UNREADABLE_FILE("skip.unreadableFile"),
-    UNEXPECTED_IO_ERROR("skip.unexpectedIo");
+    UNEXPECTED_IO_ERROR("skip.unexpectedIo"),
+    FILE_TOO_LARGE("skip.fileTooLarge");
 
     private final String messageKey;
 

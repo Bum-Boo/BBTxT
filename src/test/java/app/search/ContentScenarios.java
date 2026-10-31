@@ -95,6 +95,39 @@ final class ContentScenarios {
             }
         });
 
+        runner.run("huge files: a file above the 2 GiB regex limit is skipped, the search continues", () -> {
+            try (Corpus corpus = new Corpus("huge-regex")) {
+                corpus.sparse("huge.log", ("apple header\n" + "x".repeat(9000)).getBytes(StandardCharsets.UTF_8), THREE_GIB);
+                for (int index = 0; index < 20; index++) {
+                    corpus.write("small" + index + ".txt", "apple " + index + "\n", StandardCharsets.UTF_8);
+                }
+
+                Corpus.Result result = corpus.regex("app.e");
+
+                assertEquals("FILE_TOO_LARGE", reasonName(result, "huge.log"), "Huge file reason.");
+                assertEquals(20, result.matches().size(), "Every small file still matches.");
+                assertEquals(20, result.summary().filesSearched(), "Small files are counted as searched.");
+            }
+        });
+
+        runner.run("huge files: a line that cannot fit in memory is skipped, the search continues", () -> {
+            if (Runtime.getRuntime().maxMemory() > 1024L * 1024 * 1024) {
+                ScenarioRunner.skip("needs a heap of at most 1 GiB to stay fast; run through Gradle (-Xmx256m).");
+            }
+            try (Corpus corpus = new Corpus("huge-line")) {
+                // Sparse tail: one gigantic line of NUL characters after a text header.
+                corpus.sparse("huge-line.txt", ("apple header\n" + "x".repeat(9000)).getBytes(StandardCharsets.UTF_8), THREE_GIB);
+                for (int index = 0; index < 20; index++) {
+                    corpus.write("small" + index + ".txt", "apple " + index + "\n", StandardCharsets.UTF_8);
+                }
+
+                Corpus.Result result = corpus.search("apple");
+
+                assertEquals("FILE_TOO_LARGE", reasonName(result, "huge-line.txt"), "Huge line reason.");
+                assertEquals(20, result.matches().size(), "Every small file still matches.");
+            }
+        });
+
         runner.run("line endings: LF, CRLF and lone CR give the same line numbers in both modes", () -> {
             try (Corpus corpus = new Corpus("eol")) {
                 corpus.write("mixed.txt", "one\r\ntwo\rthree\nfour apple\r\nfive", StandardCharsets.UTF_8);

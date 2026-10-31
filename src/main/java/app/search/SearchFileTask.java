@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.file.AccessDeniedException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -24,6 +25,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 final class SearchFileTask implements Callable<FileSearchResult> {
+
+    // Regex mode loads the whole file into one array; Java arrays cannot be larger than this.
+    private static final long MAX_REGEX_FILE_BYTES = Integer.MAX_VALUE - 8L;
 
     private final SearchFileCandidate candidate;
     private final SearchOptions options;
@@ -65,6 +69,10 @@ final class SearchFileTask implements Callable<FileSearchResult> {
                 ));
             }
 
+            if (options.mode() == SearchMode.REGEX && Files.size(candidate.path()) > MAX_REGEX_FILE_BYTES) {
+                return tooLarge("File is larger than 2 GB, the limit for regex search.");
+            }
+
             List<SearchMatch> matches = options.mode() == SearchMode.REGEX
                     ? searchRegex(probe)
                     : searchLiteral(probe);
@@ -77,7 +85,20 @@ final class SearchFileTask implements Callable<FileSearchResult> {
             return skip(SkipReason.DECODE_FAILURE, exception);
         } catch (IOException exception) {
             return skip(classifyIoReason(exception), exception);
+        } catch (OutOfMemoryError error) {
+            // A huge file or a single gigantic line must not abort the whole search. The failed allocation
+            // belonged to this file only and becomes garbage once this method returns.
+            return tooLarge("Not enough memory to search this file (" + error.getMessage() + ").");
         }
+    }
+
+    private FileSearchResult tooLarge(String detail) {
+        return FileSearchResult.skipped(candidate.path(), new SkippedPath(
+                candidate.path(),
+                SkippedPathKind.FILE,
+                SkipReason.FILE_TOO_LARGE,
+                detail
+        ));
     }
 
     private List<SearchMatch> searchLiteral(TextProbe probe) throws IOException {
