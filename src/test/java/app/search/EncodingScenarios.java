@@ -154,6 +154,19 @@ final class EncodingScenarios {
             }
         });
 
+        runner.run("encoding: decomposed (NFD) Hangul matches in literal and regex mode", () -> {
+            try (Corpus corpus = new Corpus("enc-nfd")) {
+                corpus.write("nfd.txt", Normalizer.normalize("머리말\n정규화 사과\n", Normalizer.Form.NFD), StandardCharsets.UTF_8);
+
+                for (SearchMode mode : SearchMode.values()) {
+                    Corpus.Result result = Corpus.search(corpus.options("사과", mode, false, false, false));
+                    SearchMatch match = single(result, "nfd.txt");
+                    assertEquals(2, match.lineNumber(), mode + " line number.");
+                    assertEquals(5, match.columnNumber(), mode + " column in NFC coordinates.");
+                }
+            }
+        });
+
         runner.run("encoding: mixed CJK, emoji and invalid bytes after the sniffing window", () -> {
             try (Corpus corpus = new Corpus("enc-mixed")) {
                 corpus.write("mixed.md", "한국어 日本語 中文 😀 apple\n", StandardCharsets.UTF_8);

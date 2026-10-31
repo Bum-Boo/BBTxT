@@ -9,6 +9,7 @@ import app.model.SkipReason;
 import app.model.SkippedPath;
 import app.model.SkippedPathKind;
 import app.util.PreviewBuilder;
+import app.util.TextNormalization;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -103,7 +104,9 @@ final class SearchFileTask implements Callable<FileSearchResult> {
 
         for (Charset charset : probe.candidateCharsets()) {
             try {
-                String content = inspector.decodeStrict(candidate.path(), charset, probe.bomLength());
+                // Normalize to NFC like literal mode so decomposed (NFD) Hangul matches the typed query.
+                String content = TextNormalization.normalizeLiteral(
+                        inspector.decodeStrict(candidate.path(), charset, probe.bomLength()));
                 return searchRegexContent(content, charset.displayName());
             } catch (CharacterCodingException exception) {
                 lastFailure = exception;
