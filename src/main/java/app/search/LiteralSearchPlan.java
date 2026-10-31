@@ -9,6 +9,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.BooleanSupplier;
 
 final class LiteralSearchPlan {
@@ -94,14 +95,19 @@ final class LiteralSearchPlan {
     }
 
     /**
-     * Folds case one UTF-16 unit at a time so the folded text keeps the original length. Match offsets found in
-     * the folded line can then be used directly on the original line. {@link String#toLowerCase} cannot be used
-     * here because it changes the length for characters such as U+0130 (Turkish dotted capital I).
+     * Lower-cases text without changing its length, so match offsets found in the folded line can be used directly
+     * on the original line. {@link String#toLowerCase} is fast but turns U+0130 (Turkish dotted capital I) into two
+     * chars; only in that case fall back to lower-casing one UTF-16 unit at a time.
      */
     private static String foldCase(String value) {
+        String lowered = value.toLowerCase(Locale.ROOT);
+        if (lowered.length() == value.length()) {
+            return lowered;
+        }
+
         char[] chars = value.toCharArray();
         for (int index = 0; index < chars.length; index++) {
-            chars[index] = Character.toLowerCase(Character.toUpperCase(chars[index]));
+            chars[index] = Character.toLowerCase(chars[index]);
         }
         return new String(chars);
     }
