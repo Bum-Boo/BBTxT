@@ -33,6 +33,12 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
+// Run the verification harnesses on the same Java 17 toolchain the code is compiled for, not on whatever JVM
+// happens to run Gradle.
+tasks.withType(JavaExec).configureEach {
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+}
+
 tasks.named('jar', Jar) {
     manifest {
         attributes('Main-Class': application.mainClass.get())
