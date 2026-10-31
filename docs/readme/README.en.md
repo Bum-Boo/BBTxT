@@ -39,6 +39,10 @@ The Gradle build also supports a Windows installer-style EXE package. That path 
 
 ## Local Development
 
+Install JDK 17 first. The build uses a Java 17 toolchain and has no toolchain download repository configured,
+so Gradle fails with "Cannot find a Java installation ... languageVersion=17" when only a newer JDK is installed.
+On macOS or Linux, replace `.\gradlew.bat` with `./gradlew` in the commands below.
+
 Run the app from the repository root:
 
 ```powershell
@@ -55,8 +59,44 @@ You can also run the checks individually:
 
 ```powershell
 .\gradlew.bat runVerification
+.\gradlew.bat runCorpusVerification
 .\gradlew.bat runSmokeCheck
 ```
+
+- `runVerification` checks the search engine on a small fixture.
+- `runCorpusVerification` builds synthetic corpora for encodings (UTF-8, UTF-16, MS949/EUC-KR, BOMs), binary
+  detection, very long lines, huge sparse files, symlinks, permission errors and ignore rules. Permission scenarios
+  are skipped when the current user can read any file (for example root).
+- `runSmokeCheck` opens the Swing window and also checks that restarting a search does not mix in stale results.
+  It is skipped without a display; on a headless Linux machine run `xvfb-run -a ./gradlew check`.
+
+GitHub Actions runs `check` on Ubuntu (under Xvfb) and Windows for every push and pull request
+(`.github/workflows/ci.yml`).
+
+## Performance
+
+"Fast" here means interactive desktop speed, not command-line grep speed. Reproduce with:
+
+```powershell
+.\gradlew.bat runBenchmark
+```
+
+The task generates a seeded corpus in `build/bench-corpus` (20,000 files, 222 MiB: Java sources, UTF-8 and MS949
+logs, JSON, Markdown, random binaries, one large log and one minified bundle) and times the search engine without
+the Swing table. Measured on a 4-vCPU Linux cloud VM with JDK 17, warm file cache, median of 5 runs:
+
+| Search | Median | Throughput |
+|---|---|---|
+| Literal, ASCII, case-insensitive | ~0.65 s | ~340 MiB/s |
+| Literal, ASCII, case-sensitive | ~0.53 s | ~415 MiB/s |
+| Literal, Korean | ~0.57 s | ~390 MiB/s |
+| Literal, no matches | ~0.44 s | ~500 MiB/s |
+| Regex, case-insensitive | ~0.8 s | ~280 MiB/s |
+
+With a cold file cache a single search took about 1.5 s on the same corpus. For comparison, on the same machine
+GNU grep 3.11 (`grep -rIic`) took about 0.14 s warm and 1.2 s cold, and ripgrep 14.1 about 0.05 s warm and 0.33 s
+cold. Expect different numbers on other hardware, disks and antivirus setups (Windows Defender scanning in
+particular was not measured).
 
 ## Build and Packaging
 
@@ -115,6 +155,16 @@ sample-data                    Manual search fixtures
 - BB TxT is focused on phase-1 developer text search; PDF and Office documents are not part of the core default flow.
 - The app bundles Source Han Sans fonts to keep English, Korean, Japanese, and Chinese UI rendering stable.
 - The Gradle packaging tasks are Windows-oriented.
+- Encodings: UTF-8, UTF-16 with a BOM (or ASCII-heavy UTF-16 without one), and MS949/EUC-KR for `.txt`, `.log`,
+  `.md`, `.properties`, `.csv`, `.ini`, `.bat` and `.cmd`. Other files that do not decode are listed as decode
+  failures. Shift_JIS, GBK and Big5 text in those legacy extensions often decodes without errors as MS949; the file is
+  then searched as garbled CJK, so CJK queries miss while ASCII queries still match. BOM-less UTF-16 text without ASCII characters is reported as binary.
+- Binary detection only looks at the first 8 KiB of a file.
+- Files without an extension (for example `Makefile`) cannot be included by the extension filter.
+- Symbolic links inside the search folder are listed as skipped and never followed; a root folder that is itself a
+  link is searched.
+- Regex mode loads each file into memory and skips files larger than 2 GB. A file or a single line that does not fit
+  into the Java heap is listed as too large instead of stopping the search.
 - Release artifacts are meant to be uploaded to GitHub Releases, not committed into the source tree.
 ## Demo Walkthrough
 

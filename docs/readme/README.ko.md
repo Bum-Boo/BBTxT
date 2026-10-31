@@ -39,6 +39,8 @@ Gradle build는 Windows installer-style EXE package도 지원합니다. 다만 �
 
 ## Local Development
 
+JDK 17이 필요합니다. build는 Java 17 toolchain을 사용하고 toolchain download repository가 설정되어 있지 않아서, 더 새로운 JDK만 설치되어 있으면 Gradle이 "Cannot find a Java installation ... languageVersion=17" 오류로 실패합니다. macOS/Linux에서는 아래 명령의 `.\gradlew.bat`를 `./gradlew`로 바꿔 실행합니다.
+
 repository root에서 앱 실행:
 
 ```powershell
@@ -55,8 +57,13 @@ search verification과 Swing smoke check 실행:
 
 ```powershell
 .\gradlew.bat runVerification
+.\gradlew.bat runCorpusVerification
 .\gradlew.bat runSmokeCheck
 ```
+
+`runCorpusVerification`은 synthetic corpus로 encoding(UTF-8, UTF-16, MS949/EUC-KR, BOM), binary 판별, 매우 긴 줄, 대용량 sparse file, symlink, 권한 오류, ignore rule을 검증합니다. `runSmokeCheck`는 display가 없으면 skip되므로 headless Linux에서는 `xvfb-run -a ./gradlew check`를 사용합니다. GitHub Actions(`.github/workflows/ci.yml`)가 Ubuntu와 Windows에서 `check`를 실행합니다.
+
+성능 측정은 `.\gradlew.bat runBenchmark`로 재현할 수 있습니다. 측정 결과와 grep/ripgrep 비교는 [English README](README.en.md#performance)를 참고하세요.
 
 ## Build and Packaging
 
@@ -115,6 +122,10 @@ sample-data                    Manual search fixtures
 - BB TxT는 phase-1 developer text search에 집중합니다. PDF와 Office document는 기본 core flow에 포함되지 않습니다.
 - 앱은 English, Korean, Japanese, Chinese UI rendering을 안정적으로 유지하기 위해 Source Han Sans font를 bundle합니다.
 - Gradle packaging task는 Windows-oriented입니다.
+- 지원 encoding: UTF-8, BOM이 있는 UTF-16(또는 ASCII 위주인 BOM 없는 UTF-16), 그리고 `.txt`/`.log`/`.md`/`.properties`/`.csv`/`.ini`/`.bat`/`.cmd`의 MS949/EUC-KR. 그 외 decode되지 않는 파일은 decode failure로 표시됩니다.
+- Binary 판별은 파일 앞 8 KiB만 봅니다. 확장자가 없는 파일(예: `Makefile`)은 검색 대상에 넣을 수 없습니다.
+- 검색 폴더 안의 symbolic link는 따라가지 않고 skip 목록에 표시합니다. root 폴더 자체가 link인 경우는 검색합니다.
+- Regex mode는 파일 전체를 메모리에 올리므로 2 GB를 넘는 파일은 skip합니다. heap에 들어가지 않는 파일이나 줄은 검색을 멈추지 않고 too large로 표시됩니다.
 - Release artifact는 source tree에 commit하지 않고 GitHub Releases에 upload하는 것을 전제로 합니다.
 
 ## Demo Walkthrough

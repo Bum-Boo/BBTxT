@@ -39,6 +39,8 @@ Gradle build は Windows installer-style EXE package もサポートしていま
 
 ## Local Development
 
+JDK 17 が必要です。build は Java 17 toolchain を使い、toolchain download repository を設定していないため、新しい JDK だけでは Gradle が "Cannot find a Java installation ... languageVersion=17" で失敗します。macOS/Linux では `.\gradlew.bat` を `./gradlew` に置き換えてください。
+
 repository root からアプリを実行:
 
 ```powershell
@@ -55,8 +57,11 @@ search verification と Swing smoke checks を実行:
 
 ```powershell
 .\gradlew.bat runVerification
+.\gradlew.bat runCorpusVerification
 .\gradlew.bat runSmokeCheck
 ```
+
+`runCorpusVerification` は synthetic corpus で encoding、binary 判定、長い行、巨大ファイル、symlink、権限エラー、ignore rule を検証します。headless Linux では `xvfb-run -a ./gradlew check` を使います。CI は `.github/workflows/ci.yml` です。性能は `.\gradlew.bat runBenchmark` で再現でき、結果は [English README](README.en.md#performance) にあります。
 
 ## Build and Packaging
 
@@ -115,6 +120,7 @@ sample-data                    Manual search fixtures
 - BB TxT は phase-1 developer text search に集中しています。PDF や Office documents は core default flow には含まれません。
 - English、Korean、Japanese、Chinese UI rendering を安定させるため、Source Han Sans fonts を bundle しています。
 - Gradle packaging tasks は Windows-oriented です。
+- 対応 encoding は UTF-8、BOM 付き UTF-16、legacy 拡張子の MS949/EUC-KR です。それ以外で decode できないファイルは decode failure として表示されます。symbolic link はたどらず skip として表示します。
 - Release artifacts は source tree に commit せず、GitHub Releases に upload する前提です。
 
 ## Demo Walkthrough

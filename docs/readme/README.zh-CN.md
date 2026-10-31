@@ -39,6 +39,8 @@ Gradle build 也支持 Windows installer-style EXE package。但当前 build mac
 
 ## Local Development
 
+需要 JDK 17。build 使用 Java 17 toolchain，且没有配置 toolchain download repository，只安装更新版本的 JDK 时 Gradle 会以 "Cannot find a Java installation ... languageVersion=17" 失败。在 macOS/Linux 上请把 `.\gradlew.bat` 换成 `./gradlew`。
+
 在 repository root 运行应用：
 
 ```powershell
@@ -55,8 +57,11 @@ Gradle build 也支持 Windows installer-style EXE package。但当前 build mac
 
 ```powershell
 .\gradlew.bat runVerification
+.\gradlew.bat runCorpusVerification
 .\gradlew.bat runSmokeCheck
 ```
+
+`runCorpusVerification` 使用 synthetic corpus 验证 encoding、binary 检测、超长行、超大文件、symlink、权限错误和 ignore rule。在 headless Linux 上请使用 `xvfb-run -a ./gradlew check`。CI 配置位于 `.github/workflows/ci.yml`。性能可用 `.\gradlew.bat runBenchmark` 复现，结果见 [English README](README.en.md#performance)。
 
 ## Build and Packaging
 
@@ -115,6 +120,7 @@ sample-data                    Manual search fixtures
 - BB TxT 专注 phase-1 developer text search；PDF 和 Office documents 不属于核心默认流程。
 - 应用 bundle Source Han Sans fonts，以保持 English、Korean、Japanese 和 Chinese UI 稳定渲染。
 - Gradle packaging tasks 面向 Windows。
+- 支持的 encoding：UTF-8、带 BOM 的 UTF-16，以及 legacy 扩展名下的 MS949/EUC-KR。其他无法 decode 的文件会显示为 decode failure。symbolic link 不会被跟随，而是显示在 skip 列表中。
 - Release artifacts 应上传到 GitHub Releases，不应 commit 到 source tree。
 
 ## Demo Walkthrough

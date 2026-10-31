@@ -45,6 +45,8 @@ The search UI is built around a folder path, a query, search options, and a resu
 
 ## Quick Start
 
+Requires JDK 17 (the Gradle build uses a Java 17 toolchain and does not download one).
+
 ```powershell
 .\gradlew.bat run
 ```
@@ -54,6 +56,8 @@ Run checks:
 ```powershell
 .\gradlew.bat check
 ```
+
+On macOS or Linux use `./gradlew run` and `./gradlew check`.
 
 ## Documentation
 
