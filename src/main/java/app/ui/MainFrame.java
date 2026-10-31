@@ -580,13 +580,29 @@ public final class MainFrame extends JFrame {
         statusLabel.setText(localizer.text("status.searching"));
         detailLabel.setText(options.rootDirectory().toString());
 
-        currentWorker = new SearchWorker(
+        // A cancelled worker keeps delivering queued events and its done() callback on the EDT. Only the
+        // worker that is still current may touch the tables and the searching state.
+        SearchWorker[] worker = new SearchWorker[1];
+        worker[0] = new SearchWorker(
                 searchEngine,
                 options,
-                this::consumeEvents,
-                this::handleSummary,
-                this::handleFailure
+                events -> {
+                    if (currentWorker == worker[0]) {
+                        consumeEvents(events);
+                    }
+                },
+                summary -> {
+                    if (currentWorker == worker[0]) {
+                        handleSummary(summary);
+                    }
+                },
+                failure -> {
+                    if (currentWorker == worker[0]) {
+                        handleFailure(failure);
+                    }
+                }
         );
+        currentWorker = worker[0];
         currentWorker.execute();
     }
 

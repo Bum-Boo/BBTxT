@@ -51,6 +51,8 @@ public final class MainFrameSmokeCheck {
         }
 
         System.out.println("MainFrame smoke check passed.");
+
+        SearchRestartCheck.run();
     }
 
     private static void verifyUnifiedFonts() {
