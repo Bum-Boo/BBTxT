@@ -148,6 +148,15 @@ tasks.register('runVerification', JavaExec) {
     mainClass = 'app.search.SearchEngineVerification'
 }
 
+tasks.register('runCorpusVerification', JavaExec) {
+    group = 'verification'
+    description = 'Runs the synthetic-corpus scenarios: encodings, binary detection, long lines, huge files, symlinks, permissions and ignore rules.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'app.search.CorpusVerificationSuite'
+    // A small heap keeps the out-of-memory scenarios fast and deterministic.
+    maxHeapSize = '256m'
+}
+
 tasks.register('runSmokeCheck', JavaExec) {
     group = 'verification'
     description = 'Instantiates the Swing frame to catch startup regressions.'
@@ -157,5 +166,6 @@ tasks.register('runSmokeCheck', JavaExec) {
 
 tasks.named('check') {
     dependsOn tasks.named('runVerification')
+    dependsOn tasks.named('runCorpusVerification')
     dependsOn tasks.named('runSmokeCheck')
 }
