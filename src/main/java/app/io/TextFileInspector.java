@@ -123,11 +123,13 @@ public final class TextFileInspector {
             boolean looksUtf16Be,
             DecodingProfile profile
     ) {
-        Set<Charset> ordered = new LinkedHashSet<>();
-
+        // A byte-order mark is authoritative: if the content does not decode in that charset, report a
+        // decode failure instead of reinterpreting the bytes in an unrelated encoding.
         if (bomCharset != null) {
-            ordered.add(bomCharset);
+            return List.of(bomCharset);
         }
+
+        Set<Charset> ordered = new LinkedHashSet<>();
         if (looksUtf16Le) {
             ordered.add(StandardCharsets.UTF_16LE);
         }
@@ -142,8 +144,9 @@ public final class TextFileInspector {
             ordered.add(EUC_KR);
         }
 
-        ordered.add(StandardCharsets.UTF_16LE);
-        ordered.add(StandardCharsets.UTF_16BE);
+        // UTF-16 is only tried when the header looks like UTF-16. Almost any even-length byte sequence
+        // decodes as UTF-16 without errors, so a blind fallback turned undecodable files into silent
+        // false negatives instead of reported decode failures.
         return new ArrayList<>(ordered);
     }
 

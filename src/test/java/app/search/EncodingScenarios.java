@@ -114,6 +114,28 @@ final class EncodingScenarios {
             }
         });
 
+        runner.run("encoding: undecodable code files are reported, never silently searched as UTF-16 garbage", () -> {
+            try (Corpus corpus = new Corpus("enc-garbage")) {
+                // Even byte counts used to decode "successfully" as UTF-16LE garbage and silently match nothing.
+                byte[] latin1Even = "// café apple\n".getBytes(StandardCharsets.ISO_8859_1);
+                byte[] ms949Even = "// 사과 apple\n".getBytes(MS949);
+                assertTrue(latin1Even.length % 2 == 0 && ms949Even.length % 2 == 0, "Fixture needs even lengths.");
+                corpus.write("Latin1.java", latin1Even);
+                corpus.write("Ms949.java", ms949Even);
+                corpus.write("Latin1Odd.java", "// café  apple\n".getBytes(StandardCharsets.ISO_8859_1));
+                corpus.write("latin1.txt", "café apple!\n".getBytes(StandardCharsets.ISO_8859_1));
+                // Truncated UTF-16 (odd byte count) used to fall back to UTF-8 and silently match nothing.
+                corpus.write("truncated16.txt", Corpus.UTF16LE_BOM, "apple\n".getBytes(StandardCharsets.UTF_16LE), new byte[]{'x'});
+
+                for (SearchMode mode : SearchMode.values()) {
+                    Corpus.Result result = Corpus.search(corpus.options("apple", mode, false, false, false));
+                    for (String name : new String[]{"Latin1.java", "Ms949.java", "Latin1Odd.java", "latin1.txt", "truncated16.txt"}) {
+                        assertEquals("DECODE_FAILURE", reasonName(result, name), mode + " " + name);
+                    }
+                }
+            }
+        });
+
         runner.run("encoding: other legacy encodings are either matched or explicitly skipped", () -> {
             try (Corpus corpus = new Corpus("enc-other")) {
                 corpus.write("sjis.txt", "日本語のテキスト apple\n", Charset.forName("Shift_JIS"));
@@ -132,6 +154,21 @@ final class EncodingScenarios {
             }
         });
 
+        runner.run("encoding: mixed CJK, emoji and invalid bytes after the sniffing window", () -> {
+            try (Corpus corpus = new Corpus("enc-mixed")) {
+                corpus.write("mixed.md", "한국어 日本語 中文 😀 apple\n", StandardCharsets.UTF_8);
+                byte[] head = ("x".repeat(80) + "\n").repeat(200).getBytes(StandardCharsets.UTF_8);
+                corpus.write("late-invalid.java", head, "// apple ".getBytes(StandardCharsets.UTF_8), new byte[]{(byte) 0xC3, 0x28, '\n'});
+
+                assertEquals(1, corpus.search("日本語").matchesIn("mixed.md").size(), "Japanese.");
+                assertEquals(1, corpus.search("中文").matchesIn("mixed.md").size(), "Chinese.");
+                assertEquals(1, corpus.search("😀").matchesIn("mixed.md").size(), "Supplementary emoji.");
+                for (SearchMode mode : SearchMode.values()) {
+                    Corpus.Result result = Corpus.search(corpus.options("apple", mode, false, false, false));
+                    assertEquals("DECODE_FAILURE", reasonName(result, "late-invalid.java"), mode + " late invalid UTF-8.");
+                }
+            }
+        });
     }
 
     static SearchMatch single(Corpus.Result result, String fileName) {
