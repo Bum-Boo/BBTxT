@@ -157,6 +157,18 @@ tasks.register('runCorpusVerification', JavaExec) {
     maxHeapSize = '256m'
 }
 
+tasks.register('runBenchmark', JavaExec) {
+    group = 'verification'
+    description = 'Benchmarks the search engine on a seeded synthetic corpus (not part of check).'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'app.bench.SearchBenchmark'
+    args = [
+            layout.buildDirectory.dir('bench-corpus').get().asFile.absolutePath,
+            (findProperty('bench.files') ?: '20000').toString(),
+            (findProperty('bench.runs') ?: '5').toString()
+    ]
+}
+
 tasks.register('runSmokeCheck', JavaExec) {
     group = 'verification'
     description = 'Instantiates the Swing frame to catch startup regressions.'
